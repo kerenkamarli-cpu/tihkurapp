@@ -14,7 +14,7 @@ auth = Authenticate(
     cookie_expiry_days=30,
     client_id=st.secrets["google_client_id"],
     client_secret=st.secrets["google_client_secret"],
-    redirect_uri=st.secrets.get("redirect_uri", "https://tihkurapp.streamlit.app"),
+    redirect_uri=st.secrets.get("redirect_uri", "https://tihkurapp-psycho.streamlit.app/"),
 )
 
 # בדיקה אם המשתמש מחובר
