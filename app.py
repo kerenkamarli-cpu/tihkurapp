@@ -2,38 +2,42 @@ import streamlit as st
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import json
-from streamlit_google_auth import Authenticate
 
-st.set_page_config(page_title="פלטפורמת תיחקור", layout="centered")
+st.set_page_config(page_title="פלטפורמת תחקור", layout="centered")
 
-# הגדרת התחברות גוגל
-auth = Authenticate(
-    secret_credentials_path=None, # אנחנו משתמשים ב-Secrets ולא בקובץ
-    cookie_name='my_auth_cookie',
-    key='auth_key',
-    cookie_expiry_days=30,
-    client_id=st.secrets["google_client_id"],
-    client_secret=st.secrets["google_client_secret"],
-    redirect_uri=st.secrets.get("redirect_uri", "https://tihkurapp-psycho.streamlit.app/"),
-)
+# פונקציית חיבור לגוגל שיטס
+def get_gsheet():
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds_info = json.loads(st.secrets["gcp_service_account"])
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_info, scope)
+    client = gspread.authorize(creds)
+    return client.open("Psychometry_Platform").get_worksheet(0)
 
-# בדיקה אם המשתמש מחובר
-auth.check_authenticity()
+# בדיקה אם המשתמש כבר "נכנס" (בצורה פשוטה לבינתיים כדי לעקוף את השגיאה)
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
 
-if st.session_state['connected']:
-    # אם מחובר - הצגת האתר
-    st.sidebar.write(f"מחובר כ: {st.session_state['user_info'].get('email')}")
+if not st.session_state.logged_in:
+    st.title("🔐 כניסה למערכת")
+    email = st.text_input("הכניסו מייל:")
+    # סיסמה פשוטה שרק את ואופק/רותם תדעו (את יכולה לשנות אותה כאן)
+    password = st.text_input("סיסמה:", type="password")
+    
+    if st.button("כניסה"):
+        if email and password == "1234": # שנו את 1234 לסיסמה שתרצו
+            st.session_state.logged_in = True
+            st.session_state.user_email = email
+            st.rerun()
+        else:
+            st.error("מייל או סיסמה שגויים")
+else:
+    # האפליקציה עצמה אחרי התחברות
+    st.sidebar.write(f"שלום, {st.session_state.user_email}")
     if st.sidebar.button("התנתק"):
-        auth.logout()
+        st.session_state.logged_in = False
+        st.rerun()
 
-    st.title("🎯 פלטפורמת התיחקור של קרן")
-
-    def get_gsheet():
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds_info = json.loads(st.secrets["gcp_service_account"])
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_info, scope)
-        client = gspread.authorize(creds)
-        return client.open("Psychometry_Platform").get_worksheet(0)
+    st.title("אתר תחקור")
 
     try:
         sheet = get_gsheet()
@@ -48,9 +52,8 @@ if st.session_state['connected']:
         cols = st.columns(4)
         for i in range(1, 5):
             if cols[i-1].button(f"{i}", use_container_width=True, key=f"btn_{i}"):
-                # שמירת נתונים: מייל המשתמש, פרק, מספר שאלה ותשובה
-                user_email = st.session_state['user_info'].get('email')
-                sheet.append_row([user_email, section, st.session_state.q_num, i])
+                # שמירה לגיליון עם המייל של מי שנכנס
+                sheet.append_row([st.session_state.user_email, section, st.session_state.q_num, i])
                 st.toast(f"תשובה {i} נשמרה")
                 st.session_state.q_num += 1
 
@@ -59,10 +62,4 @@ if st.session_state['connected']:
             st.rerun()
             
     except Exception as e:
-        st.error(f"שגיאה בחיבור לגיליון: {e}")
-
-else:
-    # אם לא מחובר - הצגת כפתור התחברות בלבד
-    st.title("ברוכים הבאים לפלטפורמת התיחקור")
-    st.info("אנא התחברו עם חשבון הגוגל שלכם כדי להמשיך")
-    auth.login()
+        st.error(f"שגיאה בחיבור: {e}")
