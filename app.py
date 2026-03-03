@@ -11,7 +11,7 @@ st.title("🎯 פלטפורמת התיחקור של קרו")
 def get_gsheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     # משיכת המפתח מהכספת של Streamlit
-    creds_dict = dict(st.secrets) 
+    creds_dict = st.secrets["gcp_service_account"] 
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     client = gspread.authorize(creds)
     # וודאי שהשם כאן תואם לשם הגיליון שלך
