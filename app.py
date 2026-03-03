@@ -5,7 +5,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 # הגדרות תצוגה
 st.set_page_config(page_title="פלטפורמת תיחקור פסיכומטרי", layout="centered")
 
-st.title("🎯 פלטפורמת התיחקור של קרו")
+st.title("פלטפורמת תחקור")
 
 # חיבור לגוגל שיטס באמצעות ה-Secrets (הכספת)
 def get_gsheet():
